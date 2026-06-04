@@ -1,68 +1,119 @@
-import pandas as pd
 import streamlit as st
-import matplotlib.pyplot as plt
+import pandas as pd
+import plotly.graph_objects as go
 
-st.set_page_config(page_title="서울 기온 그래프", layout="wide")
+st.set_page_config(
+    page_title="서울 기온 분석",
+    page_icon="🌡️",
+    layout="wide"
+)
 
-st.title("🌡️ 서울 기온 조회")
+st.title("🌡️ 서울 기온 분석")
 
-# 데이터 불러오기
-df = pd.read_csv("seoul.csv", encoding="cp949")
+# 데이터 읽기
+try:
+    df = pd.read_csv("seoul.csv", encoding="cp949")
+except:
+    df = pd.read_csv("seoul.csv", encoding="utf-8")
 
-# 컬럼명 정리
-df.columns = ['날짜', '지점', '평균기온', '최저기온', '최고기온']
+# 컬럼명 확인 후 수정
+df.columns = [
+    "날짜",
+    "지점",
+    "평균기온",
+    "최저기온",
+    "최고기온"
+]
 
-# 날짜형 변환
-df['날짜'] = pd.to_datetime(df['날짜'])
+# 날짜 변환
+df["날짜"] = pd.to_datetime(df["날짜"])
 
 # 날짜 선택
 selected_date = st.date_input(
     "날짜를 선택하세요",
-    value=df['날짜'].max().date(),
-    min_value=df['날짜'].min().date(),
-    max_value=df['날짜'].max().date()
+    value=df["날짜"].max().date(),
+    min_value=df["날짜"].min().date(),
+    max_value=df["날짜"].max().date()
 )
 
-# 선택한 날짜 데이터
-result = df[df['날짜'].dt.date == selected_date]
+# 선택한 날짜 정보
+selected_row = df[df["날짜"].dt.date == selected_date]
 
-if len(result) > 0:
-    row = result.iloc[0]
+if not selected_row.empty:
+
+    row = selected_row.iloc[0]
 
     st.subheader(f"📅 {selected_date}")
 
-    st.write(f"최고기온: **{row['최고기온']}℃**")
-    st.write(f"최저기온: **{row['최저기온']}℃**")
+    col1, col2 = st.columns(2)
 
-    # 그래프
-    fig, ax = plt.subplots(figsize=(8, 5))
+    with col1:
+        st.metric(
+            "최고기온",
+            f"{row['최고기온']}℃"
+        )
 
-    x = ['기온']
+    with col2:
+        st.metric(
+            "최저기온",
+            f"{row['최저기온']}℃"
+        )
 
-    ax.plot(
-        x,
-        [row['최고기온']],
-        color='#FFFF00',   # 샛노란색
-        marker='o',
-        linewidth=3,
-        label='최고기온'
+    # 선택한 날짜가 속한 연도
+    year = selected_date.year
+
+    year_df = df[df["날짜"].dt.year == year]
+
+    # 그래프 생성
+    fig = go.Figure()
+
+    # 최고기온 (샛노란색)
+    fig.add_trace(
+        go.Scatter(
+            x=year_df["날짜"],
+            y=year_df["최고기온"],
+            mode="lines",
+            name="최고기온",
+            line=dict(
+                color="#FFFF00",
+                width=3
+            )
+        )
     )
 
-    ax.plot(
-        x,
-        [row['최저기온']],
-        color='#FF0000',   # 새빨간색
-        marker='o',
-        linewidth=3,
-        label='최저기온'
+    # 최저기온 (새빨간색)
+    fig.add_trace(
+        go.Scatter(
+            x=year_df["날짜"],
+            y=year_df["최저기온"],
+            mode="lines",
+            name="최저기온",
+            line=dict(
+                color="#FF0000",
+                width=3
+            )
+        )
     )
 
-    ax.set_ylabel("기온 (℃)")
-    ax.set_title(f"{selected_date} 기온")
-    ax.legend()
-    ax.grid(True)
+    # 선택 날짜 표시
+    fig.add_vline(
+        x=selected_date,
+        line_dash="dash"
+    )
 
-    st.pyplot(fig)
+    fig.update_layout(
+        title=f"{year}년 서울 최고·최저기온 변화",
+        xaxis_title="날짜",
+        yaxis_title="기온 (℃)",
+        hovermode="x unified",
+        showlegend=True,
+        height=600
+    )
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
 
 else:
-    st.error("해당 날짜의 데이터가 없습니다.")
+    st.error("해당 날짜 데이터가 없습니다.")
