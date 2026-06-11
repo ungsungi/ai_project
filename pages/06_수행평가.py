@@ -4,16 +4,19 @@ import pandas as pd
 # 페이지 설정
 st.set_page_config(page_title="일식 레시피 아카이브", layout="wide")
 
-# 보라색/빨간색 디자인 테마
+# 다크 테마 적용 (검정 배경 + 빨간색/보라색 포인트)
 st.markdown("""
     <style>
-    .stApp { background-color: #fcfcfc; }
-    h1 { color: #8B0000; text-align: center; border-bottom: 3px solid #6D28D9; }
-    .stButton>button { background-color: #6D28D9; color: white; }
+    .stApp { background-color: #121212; color: #E0E0E0; }
+    h1 { color: #FF4B4B; text-align: center; border-bottom: 3px solid #8A2BE2; }
+    h2, h3 { color: #BB86FC; }
+    .stSelectbox, .stMarkdown { color: #E0E0E0; }
+    .stButton>button { background-color: #8A2BE2; color: white; }
+    div[data-testid="stSuccess"] { background-color: #2C2C2C; border: 1px solid #FF4B4B; color: #FFDADA; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🍣 일식 레시피 아카이브")
+st.title("🍣 일식 레시피 아카이브 (Dark Mode)")
 st.write("전문 일식 요리 과정과 핵심 포인트를 정리한 페이지입니다.")
 
 # 일식 데이터
@@ -43,4 +46,4 @@ if selected_dish:
         st.success(dish_info['핵심 팁'])
 
 st.markdown("---")
-st.write("※ 이 웹사이트는 조리 전공 수행평가를 위한 레시피 기록용 앱입니다.")
+st.markdown("<p style='text-align: center; color: grey;'>2026 조리과 수행평가 프로젝트 | Dark Theme 적용</p>", unsafe_allow_html=True)
