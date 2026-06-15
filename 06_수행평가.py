@@ -1,91 +1,56 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 
-# 1. 페이지 설정 및 디자인 (보라색/빨간색 테마)
-st.set_page_config(page_title="AI 요리 밸런스 분석기", layout="wide")
+# 페이지 설정
+st.set_page_config(page_title="일식 레시피 마스터", layout="wide")
 
+# 다크 테마 디자인
 st.markdown("""
     <style>
-    .main {
-        background-color: #f5f5f5;
-    }
-    h1 {
-        color: #6D28D9; /* 보라색 */
-        text-align: center;
-        font-family: 'Nanum Gothic', sans-serif;
-    }
-    .stButton>button {
-        background-color: #DC2626; /* 빨간색 */
-        color: white;
-        border-radius: 10px;
-    }
-    .stSlider [data-baseweb="slider"] {
-        margin-top: 10px;
-    }
+    .stApp { background-color: #0A0A0A; color: #E0E0E0; }
+    h1 { color: #FF4B4B; text-align: center; border-bottom: 2px solid #8A2BE2; }
+    h2, h3 { color: #BB86FC; }
+    .stSelectbox { color: #E0E0E0; }
+    div[data-testid="stSuccess"] { background-color: #1E1E1E; border: 1px solid #FF4B4B; color: #FFDADA; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. 사이드바 - 요리 정보 입력
-st.sidebar.header("👨‍🍳 요리 정보 입력")
-dish_name = st.sidebar.text_input("요리 이름", "오늘의 요리")
-chef_name = st.sidebar.text_input("작성자(이름)", "학생성명")
-dish_type = st.sidebar.selectbox("카테고리", ["한식", "양식", "중식", "일식", "디저트"])
+st.title("🍣 일식 레시피 마스터 데이터베이스")
+st.write("20가지 정통 일식 메뉴와 상세 5단계 레시피입니다.")
 
-st.sidebar.markdown("---")
-st.sidebar.write("각 미각의 강도를 0~10점으로 조절하세요.")
+# 20가지 일식 메뉴 데이터 (레시피 5단계 포함)
+menu_data = {
+    '연어 초밥': ['1. 연어를 슬라이스 한다.', '2. 밥에 배합초를 섞는다.', '3. 밥을 한입 크기로 쥔다.', '4. 와사비를 살짝 올린다.', '5. 연어를 덮어 완성한다.'],
+    '규동': ['1. 소고기를 먹기 좋게 썬다.', '2. 양파를 채 썬다.', '3. 육수에 간장, 설탕을 넣는다.', '4. 재료를 넣고 끓인다.', '5. 밥 위에 얹어 완성한다.'],
+    '미소 된장국': ['1. 다시마 육수를 낸다.', '2. 두부를 깍둑썰기 한다.', '3. 육수에 된장을 푼다.', '4. 재료를 넣고 끓인다.', '5. 파를 고명으로 올린다.'],
+    '가츠동': ['1. 돈까스를 튀긴다.', '2. 양파와 소스를 끓인다.', '3. 달걀을 가볍게 푼다.', '4. 달걀을 붓고 익힌다.', '5. 밥 위에 얹어 완성한다.'],
+    '덴푸라': ['1. 새우 등 재료를 손질한다.', '2. 튀김가루를 반죽한다.', '3. 재료에 튀김옷을 입힌다.', '4. 기름에 바삭하게 튀긴다.', '5. 기름기를 제거한다.'],
+    '오코노미야키': ['1. 양배추를 굵게 썬다.', '2. 반죽과 재료를 섞는다.', '3. 팬에 넓게 펴서 굽는다.', '4. 베이컨을 올리고 뒤집는다.', '5. 소스와 가쓰오부시를 뿌린다.'],
+    '타코야키': ['1. 문어를 작게 썬다.', '2. 반죽물을 만든다.', '3. 틀에 반죽을 붓는다.', '4. 문어를 넣고 굴린다.', '5. 소스를 발라 완성한다.'],
+    '우동': ['1. 우동 육수를 준비한다.', '2. 면을 따로 삶는다.', '3. 육수를 뜨겁게 데운다.', '4. 면을 넣고 끓인다.', '5. 유부와 파를 올린다.'],
+    '소바': ['1. 메밀면을 삶는다.', '2. 찬물에 헹궈 물기를 뺀다.', '3. 쯔유 소스를 희석한다.', '4. 무즙과 와사비를 준비한다.', '5. 면을 소스에 찍어 먹는다.'],
+    '스끼야끼': ['1. 전골 팬을 달군다.', '2. 소고기를 살짝 굽는다.', '3. 각종 채소를 넣는다.', '4. 육수를 붓고 끓인다.', '5. 날달걀에 찍어 먹는다.'],
+    '나베야끼 우동': ['1. 뚝배기에 육수를 넣는다.', '2. 면과 버섯을 넣는다.', '3. 새우튀김을 올린다.', '4. 끓어오르면 계란을 푼다.', '5. 파를 올려 마무리한다.'],
+    '야끼소바': ['1. 면을 삶아둔다.', '2. 돼지고기와 채소를 볶는다.', '3. 면을 넣고 소스를 붓는다.', '4. 센 불에서 빠르게 볶는다.', '5. 생강 절임을 올린다.'],
+    '치킨 카라아게': ['1. 닭고기를 밑간한다.', '2. 전분 가루를 입힌다.', '3. 초벌 튀김을 한다.', '4. 잠시 식혔다가 재튀김한다.', '5. 레몬즙을 뿌린다.'],
+    '사케동': ['1. 연어를 도톰하게 썬다.', '2. 밥에 간장 소스를 뿌린다.', '3. 연어를 밥 위에 올린다.', '4. 와사비와 무순을 곁들인다.', '5. 간장 종지를 준비한다.'],
+    '낫또 비빔밥': ['1. 낫또를 많이 저어준다.', '2. 따뜻한 밥을 준비한다.', '3. 낫또를 밥 위에 올린다.', '4. 간장과 계란 노른자를 넣는다.', '5. 잘 비벼 먹는다.'],
+    '오니기리': ['1. 밥에 소금 간을 한다.', '2. 속재료를 준비한다.', '3. 밥 속에 재료를 넣는다.', '4. 삼각형 모양으로 잡는다.', '5. 김을 붙여 완성한다.'],
+    '차완무시': ['1. 계란물을 체에 거른다.', '2. 다시물과 섞는다.', '3. 용기에 담아 찜기에 넣는다.', '4. 약한 불에서 찐다.', '5. 새우를 올려 마무리한다.'],
+    '데리야끼 치킨': ['1. 닭고기를 손질한다.', '2. 팬에 닭을 노릇하게 굽는다.', '3. 데리야끼 소스를 붓는다.', '4. 소스가 배도록 조린다.', '5. 깨를 뿌려 마무리한다.'],
+    '아게다시 도후': ['1. 두부의 물기를 제거한다.', '2. 전분을 얇게 묻힌다.', '3. 기름에 노릇하게 튀긴다.', '4. 쯔유 소스를 데운다.', '5. 소스를 부어 완성한다.'],
+    '니쿠자가': ['1. 감자와 양파를 썬다.', '2. 소고기를 볶는다.', '3. 감자와 육수를 넣는다.', '4. 간장으로 간을 한다.', '5. 감자가 익을 때까지 조린다.']
+}
 
-# 3. 메인 화면 구성
-st.title(f"🍴 {dish_name} 밸런스 분석")
-st.write(f"**셰프:** {chef_name} | **카테고리:** {dish_type}")
+# 메뉴 선택
+selected_dish = st.selectbox("학습할 일식 메뉴를 선택하세요:", list(menu_data.keys()))
 
-col1, col2 = st.columns([1, 1])
-
-with col1:
-    st.subheader("📊 미각 데이터 입력")
-    sweet = st.slider("🍭 단맛 (Sweetness)", 0, 10, 5)
-    salty = st.slider("🧂 짠맛 (Saltiness)", 0, 10, 5)
-    sour = st.slider("🍋 신맛 (Sourness)", 0, 10, 5)
-    bitter = st.slider("☕ 쓴맛 (Bitterness)", 0, 10, 2)
-    umami = st.slider("🍄 감칠맛 (Umami)", 0, 10, 7)
-
-    # 데이터 프레임 생성
-    df = pd.DataFrame(dict(
-        r=[sweet, salty, sour, bitter, umami],
-        theta=['단맛', '짠맛', '신맛', '쓴맛', '감칠맛']
-    ))
-
-with col2:
-    st.subheader("📈 미각 레이더 차트")
-    # 레이더 차트 시각화 (보라색 테두리, 빨간색 채우기)
-    fig = px.line_polar(df, r='r', theta='theta', line_close=True)
-    fig.update_traces(fill='toself', line_color='#6D28D9', fillcolor='rgba(220, 38, 38, 0.4)')
-    fig.update_layout(
-        polar=dict(
-            radialaxis=dict(visible=True, range=[0, 10])
-        ),
-        showlegend=False
-    )
-    st.plotly_chart(fig, use_container_width=True)
+# 상세 레시피 표시
+if selected_dish:
+    st.subheader(f"👨‍🍳 {selected_dish} 조리 순서")
+    recipe = menu_data[selected_dish]
+    for step in recipe:
+        st.success(step)
 
 st.markdown("---")
-
-# 4. 분석 결과 출력 (간단한 로직)
-st.subheader("📝 셰프의 분석 코멘트")
-
-comments = []
-if sweet > 7: comments.append("단맛이 강하여 아이들이 좋아할 것 같습니다.")
-if salty > 7: comments.append("간이 센 편이므로 밥이나 빵과 곁들여주세요.")
-if sour > 7: comments.append("산미가 좋아 전채 요리로 적합합니다.")
-if umami > 7: comments.append("깊은 맛이 느껴지는 훌륭한 조화입니다.")
-if not comments: comments.append("전체적으로 균형이 잘 잡힌 요리입니다.")
-
-for comment in comments:
-    st.write(f"- {comment}")
-
-# 푸터
-st.markdown("""
-    <div style="text-align: center; margin-top: 50px; color: grey; font-size: 0.8em;">
-        2024 요리 교과 수행평가 결과물 - Streamlit & GitHub 연동 프로젝트
-    </div>
-    """, unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: #555;'>조리과 수행평가 데이터 아카이브 | 2026.06.15</p>", unsafe_allow_html=True)
